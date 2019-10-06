@@ -8,7 +8,7 @@ import 'client_config.dart';
 import 'events.dart';
 import 'proto/client.pb.dart';
 import 'subscription.dart';
-import 'transport.dart';
+import 'transport_web.dart';
 
 Client createClient(String url, {ClientConfig config}) => ClientImpl(
       url,

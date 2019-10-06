@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:html';
 
 import 'package:meta/meta.dart';
 import 'package:protobuf/protobuf.dart';
