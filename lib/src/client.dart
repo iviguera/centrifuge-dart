@@ -205,6 +205,7 @@ class ClientImpl implements Client, GeneratedMessageSender {
               headers: _config.headers, pingInterval: _config.pingInterval));
 
       await _transport.open(
+        _url,
         _onPush,
         onError: (dynamic error) =>
             _processDisconnect(reason: error.toString(), reconnect: true),

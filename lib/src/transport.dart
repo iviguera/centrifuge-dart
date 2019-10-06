@@ -65,6 +65,9 @@ class Transport implements GeneratedMessageSender {
       {Function onError,
       void onDone(String reason, bool shouldReconnect)}) async {
     _socket = new WebSocket(url);
+    _socket.onOpen.listen((e) {
+      print("Connected");
+    });
  /*
     _socket.listen(
       _onData(onPush),
