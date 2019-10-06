@@ -62,12 +62,14 @@ class Transport implements GeneratedMessageSender {
   final TransportConfig _config;
 
   Future open(String url, void onPush(Push push),
-      {Function onError,
+      {Function onConnect,
+      Function onError,
       void onDone(String reason, bool shouldReconnect)}) async {
     _socket = new WebSocket(url);
-    _socket.onOpen.listen((e) {
-      print("Connected");
-    });
+    _socket.onOpen.listen(onConnect);
+    _socket.onError.listen(onError);
+    _socket.onClose.listen(_onDone(onDone));
+    //_socket.onMessage.listen(onPush);
  /*
     _socket.listen(
       _onData(onPush),

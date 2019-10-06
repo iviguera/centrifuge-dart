@@ -207,6 +207,8 @@ class ClientImpl implements Client, GeneratedMessageSender {
       await _transport.open(
         _url,
         _onPush,
+        onConnect: (dynamic event) =>
+          _onConnect(),
         onError: (dynamic error) =>
             _processDisconnect(reason: error.toString(), reconnect: true),
         onDone: (reason, reconnect) =>
@@ -240,7 +242,10 @@ class ClientImpl implements Client, GeneratedMessageSender {
       _processDisconnect(reason: ex.toString(), reconnect: true);
     }
   }
-
+  void _onConnect() {
+    print("Connected");
+    _state = _ClientState.connected;
+  }
   void _onPush(Push push) {
     switch (push.type) {
       case PushType.PUBLICATION:
