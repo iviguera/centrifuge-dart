@@ -214,7 +214,13 @@ class ClientImpl implements Client, GeneratedMessageSender {
         onDone: (reason, reconnect) =>
             _processDisconnect(reason: reason, reconnect: reconnect),
       );
-      /*
+    } catch (ex) {
+      _processDisconnect(reason: ex.toString(), reconnect: true);
+    }
+  }
+  Future _onConnect(dynamic e) async {
+    print("Connected");
+    try {
       final request = ConnectRequest();
       if (_token != null) {
         request.token = _token;
@@ -237,15 +243,9 @@ class ClientImpl implements Client, GeneratedMessageSender {
       for (SubscriptionImpl subscription in _subscriptions.values) {
         subscription.resubscribeIfNeeded();
       }
-      */
     } catch (ex) {
       _processDisconnect(reason: ex.toString(), reconnect: true);
     }
-  }
-  void _onConnect(dynamic e) {
-    print("Connected");
-    print(e.data);
-    _state = _ClientState.connected;
   }
   void _onPush(Push push) {
     switch (push.type) {
