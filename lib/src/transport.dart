@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
+import 'dart:html';
 
 import 'package:meta/meta.dart';
 import 'package:protobuf/protobuf.dart';
@@ -31,10 +31,12 @@ Transport protobufTransportBuilder(
   final commandEncoder = ProtobufCommandEncoder();
 
   final transport = Transport(
+    /*
     () => WebSocket.connect(
       url,
       headers: config.headers,
     ),
+    */
     config,
     commandEncoder,
     replyDecoder,
@@ -50,28 +52,26 @@ abstract class GeneratedMessageSender {
 }
 
 class Transport implements GeneratedMessageSender {
-  Transport(this._socketBuilder, this._config, this._commandEncoder,
+  Transport(/*this._socketBuilder,*/ this._config, this._commandEncoder,
       this._replyDecoder);
 
-  final WebSocketBuilder _socketBuilder;
+  //final WebSocketBuilder _socketBuilder;
   WebSocket _socket;
   final CommandEncoder _commandEncoder;
   final ReplyDecoder _replyDecoder;
   final TransportConfig _config;
 
-  Future open(void onPush(Push push),
+  Future open(String url, void onPush(Push push),
       {Function onError,
       void onDone(String reason, bool shouldReconnect)}) async {
-    _socket = await _socketBuilder();
-    if (_config.pingInterval != Duration.zero) {
-      _socket.pingInterval = _config.pingInterval;
-    }
-
+    _socket = new WebSocket(url);
+ /*
     _socket.listen(
       _onData(onPush),
       onError: onError,
       onDone: _onDone(onDone),
     );
+    */
   }
 
   int _messageId = 1;
@@ -89,7 +89,7 @@ class Transport implements GeneratedMessageSender {
     return filledResult;
   }
 
-  Future close() {
+  void close() {
     return _socket.close();
   }
 
@@ -109,7 +109,7 @@ class Transport implements GeneratedMessageSender {
       throw centrifuge.ClientDisconnectedError;
     }
 
-    _socket.add(data);
+    _socket.send(data);
 
     return completer.future;
   }
@@ -145,6 +145,7 @@ class Transport implements GeneratedMessageSender {
     return () {
       String reason;
       bool reconnect = true;
+      /*
       if (_socket.closeReason != null) {
         try {
           final Map<String, dynamic> info = jsonDecode(_socket.closeReason);
@@ -152,6 +153,7 @@ class Transport implements GeneratedMessageSender {
           reconnect = info['reconnect'] ?? true;
         } catch (_) {}
       }
+       */
       onDone(reason, reconnect);
     };
   }
