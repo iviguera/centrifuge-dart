@@ -208,7 +208,7 @@ class ClientImpl implements Client, GeneratedMessageSender {
         _url,
         _onPush,
         onConnect: (dynamic event) =>
-          _onConnect(),
+          _onConnect(event),
         onError: (dynamic error) =>
             _processDisconnect(reason: error.toString(), reconnect: true),
         onDone: (reason, reconnect) =>
@@ -242,8 +242,9 @@ class ClientImpl implements Client, GeneratedMessageSender {
       _processDisconnect(reason: ex.toString(), reconnect: true);
     }
   }
-  void _onConnect() {
+  void _onConnect(dynamic e) {
     print("Connected");
+    print(e.data);
     _state = _ClientState.connected;
   }
   void _onPush(Push push) {
