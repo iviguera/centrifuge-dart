@@ -212,7 +212,7 @@ class ClientImpl implements Client, GeneratedMessageSender {
         onDone: (reason, reconnect) =>
             _processDisconnect(reason: reason, reconnect: reconnect),
       );
-
+      /*
       final request = ConnectRequest();
       if (_token != null) {
         request.token = _token;
@@ -235,6 +235,7 @@ class ClientImpl implements Client, GeneratedMessageSender {
       for (SubscriptionImpl subscription in _subscriptions.values) {
         subscription.resubscribeIfNeeded();
       }
+      */
     } catch (ex) {
       _processDisconnect(reason: ex.toString(), reconnect: true);
     }
