@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:centrifuge/src/transport.dart';
 import 'package:meta/meta.dart';
@@ -10,10 +11,10 @@ import 'proto/client.pb.dart';
 import 'subscription.dart';
 
 Client createClient(String url, {ClientConfig config}) => ClientImpl(
-      url,
-      config ?? ClientConfig(),
-      protobufTransportBuilder,
-    );
+  url,
+  config ?? ClientConfig(),
+  protobufTransportBuilder,
+);
 
 abstract class Client {
   Stream<ConnectEvent> get connectStream;
@@ -123,9 +124,9 @@ class ClientImpl implements Client, GeneratedMessageSender {
 
   @override
   Future<RPCResult> rpc(List<int> data) => _transport.sendMessage(
-        RPCRequest()..data = data,
-        RPCResult(),
-      );
+    RPCRequest()..data = data,
+    RPCResult(),
+  );
 
   @override
   @alwaysThrows
@@ -166,9 +167,9 @@ class ClientImpl implements Client, GeneratedMessageSender {
 
   @override
   Future<Rep>
-      sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
-              Req request, Rep result) =>
-          _transport.sendMessage(request, result);
+  sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
+    Req request, Rep result) =>
+    _transport.sendMessage(request, result);
 
   int _retryCount = 0;
 
@@ -195,41 +196,54 @@ class ClientImpl implements Client, GeneratedMessageSender {
     }
   }
 
-  Future<void> _connect() async {
+  void _connect() {
     try {
       _state = _ClientState.connecting;
 
       _transport = _transportBuilder(
-          url: _url,
-          config: TransportConfig(
-              headers: _config.headers, pingInterval: _config.pingInterval));
+        url: _url,
+        config: TransportConfig(
+          headers: _config.headers, pingInterval: _config.pingInterval));
 
-      await _transport.open(
+      _transport.open(
         _url,
         _onPush,
         onConnect: (dynamic event) =>
           _onConnect(event),
+        onMessage: (dynamic event) =>
+          _onMessage(event),
         onError: (dynamic error) =>
-            _processDisconnect(reason: error.toString(), reconnect: true),
+          _processDisconnect(reason: error.toString(), reconnect: false),
         onDone: (reason, reconnect) =>
-            _processDisconnect(reason: reason, reconnect: reconnect),
+          _processDisconnect(reason: reason, reconnect: reconnect),
       );
     } catch (ex) {
       _processDisconnect(reason: ex.toString(), reconnect: true);
     }
   }
-  Future _onConnect(dynamic e) async {
+
+  void _onMessage(dynamic e) async {
+    print("Message");
+    print(e.data);
+    var data = jsonDecode(e.data);
+    _clientID = data["result"]["client"];
+    _retryCount = 0;
+    _state = _ClientState.connected;
+
+    //_connectController.add(ConnectEvent.from(result));
+  }
+  void _onConnect(dynamic e) {
     print("Connected");
     try {
       final request = ConnectRequest();
       if (_token != null) {
         request.token = _token;
       }
-
-      if (_connectData != null) {
-        request.data = _connectData;
-      }
-
+      _transport.sendMessage2(
+        request
+      );
+      //_transport.sendConnectMessage(request);
+/*
       final result = await _transport.sendMessage(
         request,
         ConnectResult(),
@@ -243,8 +257,9 @@ class ClientImpl implements Client, GeneratedMessageSender {
       for (SubscriptionImpl subscription in _subscriptions.values) {
         subscription.resubscribeIfNeeded();
       }
+*/
     } catch (ex) {
-      _processDisconnect(reason: ex.toString(), reconnect: true);
+      _processDisconnect(reason: ex.toString(), reconnect: false);
     }
   }
   void _onPush(Push push) {
@@ -294,10 +309,10 @@ class ClientImpl implements Client, GeneratedMessageSender {
   }
 
   Future<String> _onPrivateSub(PrivateSubEvent event) =>
-      _config.onPrivateSub(event);
+    _config.onPrivateSub(event);
 
   bool _isPrivateChannel(String channel) =>
-      channel.startsWith(_config.privateChannelPrefix);
+    channel.startsWith(_config.privateChannelPrefix);
 }
 
 enum _ClientState { connected, disconnected, connecting }

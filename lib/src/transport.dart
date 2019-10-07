@@ -18,7 +18,7 @@ typedef Future<WebSocket> WebSocketBuilder();
 
 class TransportConfig {
   TransportConfig(
-      {this.pingInterval = const Duration(seconds: 25),
+    {this.pingInterval = const Duration(seconds: 25),
       this.headers = const <String, dynamic>{}});
 
   final Duration pingInterval;
@@ -26,7 +26,7 @@ class TransportConfig {
 }
 
 Transport protobufTransportBuilder(
-    {@required String url, @required TransportConfig config}) {
+  {@required String url, @required TransportConfig config}) {
   final replyDecoder = ProtobufReplyDecoder();
   final commandEncoder = ProtobufCommandEncoder();
 
@@ -47,13 +47,13 @@ Transport protobufTransportBuilder(
 
 abstract class GeneratedMessageSender {
   Future<Rep>
-      sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
-          Req request, Rep result);
+  sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
+    Req request, Rep result);
 }
 
 class Transport implements GeneratedMessageSender {
   Transport(/*this._socketBuilder,*/ this._config, this._commandEncoder,
-      this._replyDecoder);
+    this._replyDecoder);
 
   //final WebSocketBuilder _socketBuilder;
   WebSocket _socket;
@@ -61,16 +61,19 @@ class Transport implements GeneratedMessageSender {
   final ReplyDecoder _replyDecoder;
   final TransportConfig _config;
 
-  Future open(String url, void onPush(Push push),
-      {Function onConnect,
+  void open(String url, void onPush(Push push),
+    {Function onConnect,
+      Function onMessage,
       Function onError,
       void onDone(String reason, bool shouldReconnect)}) async {
     _socket = new WebSocket(url);
     _socket.onOpen.listen(onConnect);
     _socket.onError.listen(onError);
-    _socket.onClose.listen(_onDone(onDone));
-    //_socket.onMessage.listen(onPush);
- /*
+    _socket.onClose.listen((e) {
+      print("Connection closed");
+    });
+    _socket.onMessage.listen(onMessage);
+    /*
     _socket.listen(
       _onData(onPush),
       onError: onError,
@@ -85,13 +88,18 @@ class Transport implements GeneratedMessageSender {
 
   @override
   Future<Rep>
-      sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
-          Req request, Rep result) async {
+  sendMessage<Req extends GeneratedMessage, Rep extends GeneratedMessage>(
+    Req request, Rep result) async {
     final command = _createCommand(request);
     final reply = await _sendCommand(command);
 
     final filledResult = _processResult(result, reply);
     return filledResult;
+  }
+
+  void sendMessage2<Req extends GeneratedMessage>(Req request) {
+    final command = _createCommand(request);
+    _sendCommand2(command);
   }
 
   void close() {
@@ -119,6 +127,20 @@ class Transport implements GeneratedMessageSender {
     return completer.future;
   }
 
+  void _sendCommand2(Command command) {
+    final c = <String, dynamic> {
+      "id": command.id,
+      "method": command.method.value
+    };
+    _socket.send(jsonEncode(c));
+  }
+  void _sendCommand3(Command command) {
+    final data = _commandEncoder.convert(command);
+    if (_socket == null) {
+      throw centrifuge.ClientDisconnectedError;
+    }
+    _socket.send(data);
+  }
   T _processResult<T extends GeneratedMessage>(T result, Reply reply) {
     if (reply.hasError()) {
       throw centrifuge.Error.custom(reply.error.code, reply.error.message);
